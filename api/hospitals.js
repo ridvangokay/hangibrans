@@ -123,15 +123,33 @@ async function queryOpenStreetMapFallback({ lat, lng, city, district, instType }
   }
   if (!Number.isFinite(cLat) || !Number.isFinite(cLng)) return [];
 
-  // Overpass API ile 15 km yarıçaptaki tüm gerçek hastaneleri getir
-  const overpassQuery = `[out:json][timeout:12];(node["amenity"="hospital"](around:15000,${cLat},${cLng});way["amenity"="hospital"](around:15000,${cLat},${cLng});relation["amenity"="hospital"](around:15000,${cLat},${cLng}););out center tags;`;
-  const ovResp = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `data=${encodeURIComponent(overpassQuery)}`
-  });
-  if (!ovResp.ok) return [];
-  const ovJson = await ovResp.json();
+  // Overpass API ile 15 km yarıçaptaki tüm gerçek hastaneleri yedekli aynalardan getir
+  const overpassQuery = `[out:json][timeout:12];nwr["amenity"="hospital"](around:15000,${cLat},${cLng});out center tags;`;
+  const endpoints = [
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
+    "https://lz4.overpass-api.de/api/interpreter"
+  ];
+  let ovJson = null;
+  for (const ep of endpoints) {
+    try {
+      const ovResp = await fetch(ep, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": "HangiBransApp/1.0 (https://hangibrans.com.tr)"
+        },
+        body: `data=${encodeURIComponent(overpassQuery)}`
+      });
+      if (ovResp.ok) {
+        ovJson = await ovResp.json();
+        break;
+      }
+    } catch {
+      // Sonraki aynayı dene
+    }
+  }
+  if (!ovJson) return [];
 
   const seen = new Set();
   const hospitals = [];
