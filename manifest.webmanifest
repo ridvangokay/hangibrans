@@ -1,0 +1,22 @@
+{
+  "name": "HangiBranş — Doğru Bölüm & En Yakın Hastane",
+  "short_name": "HangiBranş",
+  "description": "Şikayetinizi anlatın; doğru tıbbi bölümü, en yakın Devlet, Üniversite ve Özel hastaneleri, doktor kadrolarını ve nöbetçi eczaneleri saniyeler içinde bulun.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F7F6",
+  "theme_color": "#0F766E",
+  "lang": "tr",
+  "dir": "ltr",
+  "categories": ["medical", "health", "utilities"],
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

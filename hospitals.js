@@ -358,7 +358,11 @@ const DOKTORUM_HOSPITALS = [
     scheduleUrl: "https://www.medicana.com.tr/",
     scheduleLabel: "Hastane Sitesi · Doktorlarımız",
     specialties: ["genel-cerrahi", "gastroenteroloji", "kardiyoloji", "ortopedi", "beyin-cerrahi", "kbb", "noroloji", "dermatoloji", "uroloji", "goz", "dahiliye", "kadin-dogum", "gogus-hastaliklari", "kalp-damar", "cocuk-sagligi", "psikiyatri"],
-    doctorsBySpecialty: {}
+    doctorsBySpecialty: {
+      "genel-cerrahi": [
+        { name: "Op. Dr. Engin Okan Yıldırım", focus: "Genel Cerrahi" }
+      ]
+    }
   },
   {
     id: "h-acibadem-bakirkoy",
@@ -377,7 +381,13 @@ const DOKTORUM_HOSPITALS = [
     scheduleUrl: "https://www.acibadem.com.tr/",
     scheduleLabel: "Hastane Sitesi · Doktorlarımız",
     specialties: ["genel-cerrahi", "gastroenteroloji", "kardiyoloji", "ortopedi", "beyin-cerrahi", "kbb", "noroloji", "dermatoloji", "uroloji", "goz", "dahiliye", "kadin-dogum", "gogus-hastaliklari", "kalp-damar", "cocuk-sagligi", "psikiyatri"],
-    doctorsBySpecialty: {}
+    doctorsBySpecialty: {
+      "genel-cerrahi": [
+        { name: "Doç. Dr. Eyüp Gemici", focus: "Genel Cerrahi" },
+        { name: "Dr. Ahmet Alan", focus: "Genel Cerrahi" },
+        { name: "Dr. Necat Almalı", focus: "Genel Cerrahi · Meme Kliniği" }
+      ]
+    }
   },
   {
     id: "h-memorial-sisli",
@@ -396,7 +406,17 @@ const DOKTORUM_HOSPITALS = [
     scheduleUrl: "https://www.memorial.com.tr/",
     scheduleLabel: "Hastane Sitesi · Doktorlarımız",
     specialties: ["genel-cerrahi", "gastroenteroloji", "kardiyoloji", "ortopedi", "beyin-cerrahi", "kbb", "noroloji", "dermatoloji", "uroloji", "goz", "dahiliye", "kadin-dogum", "gogus-hastaliklari", "kalp-damar", "cocuk-sagligi", "psikiyatri"],
-    doctorsBySpecialty: {}
+    doctorsBySpecialty: {
+      "genel-cerrahi": [
+        { name: "Prof. Dr. Koray Acarlı", focus: "Genel Cerrahi · Bölüm Başkanı" },
+        { name: "Prof. Dr. Emin Köse", focus: "Genel Cerrahi" },
+        { name: "Prof. Dr. Gürkan Öztürk", focus: "Genel Cerrahi" },
+        { name: "Prof. Dr. Gürsel Remzi Soybir", focus: "Genel Cerrahi" },
+        { name: "Prof. Dr. Kamil Yalçın Polat", focus: "Genel Cerrahi" },
+        { name: "Prof. Dr. Mert Mahsuni Sevinç", focus: "Genel Cerrahi" },
+        { name: "Doç. Dr. Fadime Didem Trabulus", focus: "Genel Cerrahi" }
+      ]
+    }
   },
   {
     id: "h-haydarpasa-numune",
@@ -435,7 +455,12 @@ const DOKTORUM_HOSPITALS = [
     scheduleUrl: "https://www.acibadem.com.tr/",
     scheduleLabel: "Hastane Sitesi · Doktorlarımız",
     specialties: ["genel-cerrahi", "gastroenteroloji", "kardiyoloji", "ortopedi", "beyin-cerrahi", "kbb", "noroloji", "dermatoloji", "uroloji", "goz", "dahiliye", "kadin-dogum", "gogus-hastaliklari", "kalp-damar", "cocuk-sagligi", "psikiyatri"],
-    doctorsBySpecialty: {}
+    doctorsBySpecialty: {
+      "genel-cerrahi": [
+        { name: "Prof. Dr. Yılmaz Büyükuncu", focus: "Genel Cerrahi" },
+        { name: "Doç. Dr. Hakan Yardımcı", focus: "Genel Cerrahi" }
+      ]
+    }
   },
   {
     id: "h-memorial-atasehir",
@@ -553,7 +578,17 @@ const DOKTORUM_HOSPITALS = [
     scheduleUrl: "https://www.guven.com.tr/",
     scheduleLabel: "Hastane Sitesi · Doktorlarımız",
     specialties: ["genel-cerrahi", "gastroenteroloji", "kardiyoloji", "ortopedi", "beyin-cerrahi", "kbb", "noroloji", "dermatoloji", "uroloji", "goz", "dahiliye", "kadin-dogum", "gogus-hastaliklari", "kalp-damar", "cocuk-sagligi", "psikiyatri"],
-    doctorsBySpecialty: {}
+    doctorsBySpecialty: {
+      "genel-cerrahi": [
+        { name: "Prof. Dr. Gökhan Yağcı", focus: "Genel Cerrahi · Organ Nakli, Obezite ve Kolorektal Cerrahi" },
+        { name: "Prof. Dr. Bülent Cavit Yüksel", focus: "Genel Cerrahi · Kolorektal, Robotik ve Laparoskopik Cerrahi" },
+        { name: "Prof. Dr. Burak Işık", focus: "Genel Cerrahi · Karaciğer, Pankreas ve Safra Yolları" },
+        { name: "Doç. Dr. Veysel Ersan", focus: "Genel Cerrahi · Hepatopankreatobiliyer Cerrahi" },
+        { name: "Uzm. Dr. Mehmet Yıldız", focus: "Genel Cerrahi" },
+        { name: "Uzm. Dr. Sarp Kaya Görür", focus: "Genel Cerrahi" },
+        { name: "Uzm. Dr. Fikri Küçükel", focus: "Genel Cerrahi" }
+      ]
+    }
   },
   {
     id: "h-memorial-ankara",
@@ -631,7 +666,16 @@ const DOKTORUM_HOSPITALS = [
     scheduleUrl: "https://www.medicana.com.tr/",
     scheduleLabel: "Hastane Sitesi · Doktorlarımız",
     specialties: ["genel-cerrahi", "gastroenteroloji", "kardiyoloji", "ortopedi", "beyin-cerrahi", "kbb", "noroloji", "dermatoloji", "uroloji", "goz", "dahiliye", "kadin-dogum", "gogus-hastaliklari", "kalp-damar", "cocuk-sagligi", "psikiyatri"],
-    doctorsBySpecialty: {}
+    doctorsBySpecialty: {
+      "genel-cerrahi": [
+        { name: "Prof. Dr. Koray Topgül", focus: "Genel Cerrahi" },
+        { name: "Prof. Dr. Sedat Karademir", focus: "Genel Cerrahi" },
+        { name: "Prof. Dr. Turan Acar", focus: "Genel Cerrahi" },
+        { name: "Prof. Dr. Varlık Erol", focus: "Genel Cerrahi" },
+        { name: "Op. Dr. Abdullah Haluk Şirin", focus: "Genel Cerrahi" },
+        { name: "Op. Dr. Serkan Güler", focus: "Genel Cerrahi" }
+      ]
+    }
   },
   {
     id: "h-deu-izmir",
@@ -728,7 +772,17 @@ const DOKTORUM_HOSPITALS = [
     scheduleUrl: "https://www.medicana.com.tr/",
     scheduleLabel: "Hastane Sitesi · Doktorlarımız",
     specialties: ["genel-cerrahi", "gastroenteroloji", "kardiyoloji", "ortopedi", "beyin-cerrahi", "kbb", "noroloji", "dermatoloji", "uroloji", "goz", "dahiliye", "kadin-dogum", "gogus-hastaliklari", "kalp-damar", "cocuk-sagligi", "psikiyatri"],
-    doctorsBySpecialty: {}
+    doctorsBySpecialty: {
+      "genel-cerrahi": [
+        { name: "Prof. Dr. Ersin Öztürk", focus: "Genel Cerrahi" },
+        { name: "Prof. Dr. Halit Ziya Dündar", focus: "Genel Cerrahi" },
+        { name: "Prof. Dr. Özgen Işık", focus: "Genel Cerrahi" },
+        { name: "Doç. Dr. Barış Gülcü", focus: "Genel Cerrahi" },
+        { name: "Op. Dr. Ali Önder Devay", focus: "Genel Cerrahi" },
+        { name: "Op. Dr. Ersoy Taşpınar", focus: "Genel Cerrahi" },
+        { name: "Op. Dr. Gözde Doğan", focus: "Genel Cerrahi" }
+      ]
+    }
   },
   {
     id: "h-antalya-eah",
@@ -767,7 +821,12 @@ const DOKTORUM_HOSPITALS = [
     scheduleUrl: "https://www.memorial.com.tr/",
     scheduleLabel: "Hastane Sitesi · Doktorlarımız",
     specialties: ["genel-cerrahi", "gastroenteroloji", "kardiyoloji", "ortopedi", "beyin-cerrahi", "kbb", "noroloji", "dermatoloji", "uroloji", "goz", "dahiliye", "kadin-dogum", "gogus-hastaliklari", "kalp-damar", "cocuk-sagligi", "psikiyatri"],
-    doctorsBySpecialty: {}
+    doctorsBySpecialty: {
+      "genel-cerrahi": [
+        { name: "Prof. Dr. Alihan Gürkan", focus: "Genel Cerrahi" },
+        { name: "Op. Dr. Nazlı Yavuzer Türe", focus: "Genel Cerrahi" }
+      ]
+    }
   },
   {
     id: "h-bursa-sehir",

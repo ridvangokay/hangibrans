@@ -1,17 +1,18 @@
-// Doktorum — Soru-Cevaplı Olası Ön Tanı, Otomatik Konum ve Gerçek Mesafe Hesabı
+// HangiBranş — Soru-Cevaplı Olası Ön Tanı, Otomatik Konum, PWA ve Canlı Sunucu Entegrasyonu
 
 (function () {
   const state = {
-    location: null, // Başlangıçta konum boş — kullanıcı GPS veya ilçe seçer
+    location: null, // Başlangıçta konum boş — kullanıcı GPS veya il/ilçe seçer
     instFilter: "Tümü",
     expandedHospitalId: null,
     liveHospitalsCache: null, // Canlı /api/hospitals sonucu (tüm Türkiye 81 il)
     activeFlow: null,
     answers: {},
     result: null,
-    backendUrl: localStorage.getItem("doktorum_backend_url") || "",
-    geminiKey: localStorage.getItem("doktorum_gemini_key") || ""
+    serverAiReady: false // Sunucuda GEMINI_API_KEY tanımlıysa /api/triage otomatik devreye girer
   };
+
+  let deferredInstallPrompt = null;
 
   const $ = (id) => document.getElementById(id);
 
@@ -63,9 +64,10 @@
         : state.location.city;
       $("currentLocLabel").textContent = label;
       $("locBannerTitle").textContent = `Seçili Konum: ${label}`;
-      $("locBannerDesc").textContent = state.location.hasExactCoords !== false
-        ? "En yakın hastaneler, eczaneler ve nöbetçi eczaneler bu konuma göre güncellendi."
-        : "Bu ilçe için canlı harita üzerinden en yakın Devlet, Üniversite, Özel hastaneler ve eczaneler hazırlanır.";
+      $("locBannerDesc").textContent =
+        window.location.protocol.startsWith("http") || state.location.hasExactCoords !== false
+          ? "En yakın hastaneler, eczaneler ve nöbetçi eczaneler bu konuma göre güncellendi."
+          : "Bu ilçe için canlı harita üzerinden en yakın Devlet, Üniversite, Özel hastaneler ve eczaneler hazırlanır.";
       banner.classList.add("confirmed");
       if ($("provinceSelect")) {
         $("provinceSelect").value = state.location.city || "";
@@ -154,7 +156,6 @@
     const normDist = normalizeTR(district);
     const normCity = normalizeTR(city);
 
-    // Bilinen koordinatlı bir ilçeyle eşleşiyorsa gerçek koordinatını kullan
     const matched = DOKTORUM_LOCATIONS.find(
       (l) =>
         normalizeTR(l.city) === normCity &&
@@ -216,13 +217,19 @@
     );
   }
 
-  function updateAiStatusUI() {
-    const isLive = Boolean(state.backendUrl || state.geminiKey);
-    $("aiModeDot").classList.toggle("live", isLive);
-    $("aiModeLabel").textContent = isLive ? "Gemini Canlı" : "Hızlı Mod";
+  async function checkServerAiStatus() {
+    if (!window.location.protocol.startsWith("http")) return;
+    try {
+      const resp = await fetch("/api/triage", { method: "GET" });
+      if (resp.ok) {
+        const data = await resp.json();
+        state.serverAiReady = Boolean(data.aiReady);
+      }
+    } catch {
+      state.serverAiReady = false;
+    }
   }
 
-  // Adım 1: Metni incele -> acilse direkt uyar, sorulu akışa uyuyorsa soruları göster
   async function startAssessment() {
     const rawText = $("symptomInput").value.trim();
     if (rawText.length < 3) {
@@ -261,7 +268,7 @@
       }
     }
 
-    // 2. Soru-cevaplı klinik akış eşleşmesi (karın ağrısı, makat ağrısı, fıtık, meme, göğüs, eklem)
+    // 2. Hekim onaylı 15 soru-cevaplı klinik akış eşleşmesi
     let matchedFlow = null;
     let bestHits = 0;
     for (const flow of DOKTORUM_TRIAGE.flows) {
@@ -283,7 +290,7 @@
       return;
     }
 
-    // 3. Direkt eşleşen diğer branşlar veya canlı Gemini API
+    // 3. Serbest şikayetler için sunucu tarafı Gemini AI (/api/triage) veya yerel klinik motor
     $("questionsCard").classList.add("hidden");
     await finalizeDirectOrAI(rawText);
   }
@@ -296,7 +303,6 @@
     const list = $("questionsList");
     list.innerHTML = "";
 
-    // Metinde zaten ipucu varsa ön seçim yap (örn. "sağ üst" veya "reflü")
     if (flow.id === "karin-agrisi") {
       if (normText.includes("sağ üst") || normText.includes("safra")) state.answers.location = "sag-ust";
       else if (normText.includes("sağ alt") || normText.includes("apandisit")) state.answers.location = "sag-alt";
@@ -334,32 +340,6 @@
 
   async function submitQuestions() {
     if (!state.activeFlow) return;
-    const rawText = $("symptomInput").value.trim();
-
-    // Canlı Gemini API tanımlıysa soruların yanıtlarıyla birlikte Gemini'ye sor
-    if (state.backendUrl || state.geminiKey) {
-      const answersSummary = state.activeFlow.questions
-        .map((q) => {
-          const val = state.answers[q.id];
-          const found = q.options.find((o) => o.value === val);
-          return found ? `${q.text} -> ${found.label}` : null;
-        })
-        .filter(Boolean)
-        .join(" | ");
-
-      try {
-        const aiRes = await liveGeminiAnalyze(`${rawText}\nEk yanıtlar: ${answersSummary}`);
-        if (aiRes) {
-          $("questionsCard").classList.add("hidden");
-          state.result = aiRes;
-          renderResult();
-          return;
-        }
-      } catch {
-        showToast("Canlı Gemini yanıt vermedi, klinik ön değerlendirme kullanıldı.");
-      }
-    }
-
     const evalRes = state.activeFlow.evaluate(state.answers);
     $("questionsCard").classList.add("hidden");
     state.result = {
@@ -377,17 +357,21 @@
   }
 
   async function finalizeDirectOrAI(rawText) {
-    if (state.backendUrl || state.geminiKey) {
+    if (window.location.protocol.startsWith("http") && state.serverAiReady) {
+      const btnText = $("analyzeBtnText");
+      if (btnText) btnText.textContent = "Değerlendiriliyor...";
       try {
         const aiRes = await liveGeminiAnalyze(rawText);
         if (aiRes) {
           state.result = aiRes;
           renderResult();
+          if (btnText) btnText.textContent = "Değerlendirmeye Başla";
           return;
         }
       } catch {
-        showToast("Canlı Gemini yanıt vermedi, hızlı analiz kullanıldı.");
+        // Sessizce yerel klinik motora düş
       }
+      if (btnText) btnText.textContent = "Değerlendirmeye Başla";
     }
 
     const norm = normalizeTR(rawText);
@@ -415,45 +399,19 @@
       alternatives: spec.id === "dahiliye" ? ["Genel Cerrahi"] : ["İç Hastalıkları (Dahiliye)"],
       isEmergency: false,
       emergencyReason: "",
-      engine: "Hızlı Analiz"
+      engine: "Klinik Ön Değerlendirme"
     };
     renderResult();
   }
 
   async function liveGeminiAnalyze(fullText) {
-    const validIds = Object.values(DOKTORUM_TRIAGE.specialties).map((s) => `${s.id} (${s.name})`).join(", ");
-    const systemPrompt = [
-      "Sen Türkiye'deki hastalar için sade bir klinik ön değerlendirme ve branş yönlendirme asistanısın.",
-      "Kesin tanı koyma veya ilaç yazma; sadece olası ön tanıyı, ayırıcı olasılıkları, doğru branşı ve acil kırmızı bayrak durumunu belirle.",
-      `Geçerli specialtyId değerleri: ${validIds}.`,
-      'Sadece geçerli JSON döndür: {"specialtyId":"...","preliminaryDiagnosis":"...","differential":["..."],"explanation":"...","redFlagNote":"...","isEmergency":false,"emergencyReason":""}'
-    ].join("\n");
-
-    let data;
-    if (state.backendUrl) {
-      const resp = await fetch(state.backendUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ complaint: fullText })
-      });
-      if (!resp.ok) throw new Error("Sunucu hatası");
-      data = await resp.json();
-    } else if (state.geminiKey) {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(state.geminiKey)}`;
-      const resp = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt}\n\nHasta bilgisi: ${fullText}` }] }],
-          generationConfig: { responseMimeType: "application/json", temperature: 0.2 }
-        })
-      });
-      if (!resp.ok) throw new Error("Gemini API hatası");
-      const raw = await resp.json();
-      data = JSON.parse(raw.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
-    } else {
-      return null;
-    }
+    const resp = await fetch("/api/triage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ complaint: fullText })
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
 
     const spec = DOKTORUM_TRIAGE.specialties[data.specialtyId] || DOKTORUM_TRIAGE.specialties["dahiliye"];
     return {
@@ -465,7 +423,7 @@
       alternatives: [],
       isEmergency: Boolean(data.isEmergency),
       emergencyReason: data.emergencyReason || "",
-      engine: "Gemini Yapay Zeka"
+      engine: "Yapay Zeka Destekli Ön Değerlendirme"
     };
   }
 
@@ -498,7 +456,7 @@
 
     const tag = $("engineTag");
     tag.textContent = r.engine;
-    tag.classList.toggle("ai", r.engine === "Gemini Yapay Zeka");
+    tag.classList.toggle("ai", r.engine.includes("Yapay Zeka"));
 
     const altWrap = $("altWrap");
     const altList = $("altList");
@@ -570,7 +528,6 @@
 
     const container = $("hospitalsList");
 
-    // 1) Canlı sunucuda (Vercel + Supabase / OSM) tüm 81 il ve 973 ilçe için canlı API'yi çağır
     const cacheKey = `${loc.city}|${loc.district}|${loc.lat}|${loc.lng}|${spec.id}|${state.instFilter}`;
     let liveList = null;
     if (window.location.protocol.startsWith("http")) {
@@ -589,7 +546,6 @@
       return;
     }
 
-    // 2) Çevrimdışı dosya açılışında: özel ilçe koordinatı yoksa doğrudan o ilçe için canlı harita + MHRS kartları sun
     if (loc.hasExactCoords === false || !loc.lat || !loc.lng) {
       const qBase = `${loc.district} ${loc.city}`;
       const stateMap = `https://www.google.com/maps/search/${encodeURIComponent(qBase + " devlet hastanesi")}`;
@@ -786,6 +742,87 @@
     });
   }
 
+  function openLegalModal(kind) {
+    const titleEl = $("legalModalTitle");
+    const bodyEl = $("legalModalBody");
+    if (!titleEl || !bodyEl) return;
+
+    if (kind === "kvkk") {
+      titleEl.textContent = "KVKK & Gizlilik Aydınlatma Metni";
+      bodyEl.innerHTML = `
+        <p><strong>HangiBranş</strong>, 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ilkelerine tam uyumlu ve gizlilik odaklı çalışır.</p>
+        <h4>Kişisel Sağlık Verisi Saklanmaz</h4>
+        <ul>
+          <li>Uygulamayı kullanmak için üyelik, ad-soyad, T.C. Kimlik Numarası veya telefon bilgisi istenmez.</li>
+          <li>Yazdığınız veya sesle aktardığınız şikayet ifadeleri herhangi bir veritabanında kayıt altına alınmaz; yalnızca anlık branş yönlendirmesi üretmek için işlenir.</li>
+          <li>Sesle anlatım özelliği cihazınızın/tarayıcınızın kendi konuşma tanıma servisini kullanır; ses kaydı sunucularımıza aktarılmaz.</li>
+        </ul>
+        <h4>Konum Bilgisi</h4>
+        <p>GPS izni verdiğinizde veya İl/İlçe seçtiğinizde konum bilginiz yalnızca size en yakın hastaneleri, eczaneleri ve nöbetçi eczaneleri listelemek amacıyla anlık kullanılır ve profil olarak saklanmaz.</p>
+      `;
+    } else if (kind === "disclaimer") {
+      titleEl.textContent = "Tıbbi Sorumluluk Reddi & Kullanım Koşulları";
+      bodyEl.innerHTML = `
+        <p><strong>HangiBranş</strong>, hastaların hangi tıbbi polikliniğe başvuracaklarını ve çevrelerindeki sağlık kuruluşlarını kolayca bulmalarını sağlayan bir <strong>bilgilendirme ve yönlendirme</strong> platformudur.</p>
+        <ul>
+          <li>Platformda gösterilen "olası ön tanı" ve branş önerileri <strong>kesin hekim tanısı, tıbbi tedavi veya reçete yerine geçmez</strong>.</li>
+          <li>Göğüs ağrısı, ani nefes darlığı, felç bulguları, şiddetli kanama, bilinç kaybı veya ani kötüleşme gibi acil durumlarda vakit kaybetmeden <strong>112 Acil Yardım</strong>'ı arayın veya en yakın Acil Servise başvurun.</li>
+          <li>Hastane ve hekim kadroları kamuya açık resmi kaynaklardan düzenli güncellenmekle birlikte dönemsel değişiklik gösterebilir; randevu öncesi ilgili hastaneden veya <strong>MHRS / ALO 182</strong> üzerinden teyit ediniz.</li>
+          <li>Uygulama, <em>Sağlık Hizmetlerinde Tanıtım ve Bilgilendirme Faaliyetleri Yönetmeliği</em> uyarınca reklam, hasta yorumu, puanlama veya ücret kıyaslaması içermez.</li>
+        </ul>
+      `;
+    } else {
+      titleEl.textContent = "HangiBranş'ı Telefonunuza Uygulama Gibi Ekleyin";
+      bodyEl.innerHTML = `
+        <p>HangiBranş'ı uygulama mağazası beklemeden tek dokunuşla telefonunuzun ana ekranına ekleyip tam ekran uygulama gibi kullanabilirsiniz:</p>
+        <h4>Android (Chrome)</h4>
+        <ul>
+          <li>Üstteki <strong>"Uygulamayı Kur"</strong> butonuna dokunun veya tarayıcı menüsünden (⋮) <strong>"Ana ekrana ekle / Uygulamayı yükle"</strong> seçeneğini seçin.</li>
+        </ul>
+        <h4>iPhone / iPad (Safari)</h4>
+        <ul>
+          <li>Alt çubuktaki <strong>Paylaş (↑)</strong> simgesine dokunun.</li>
+          <li>Aşağı kaydırıp <strong>"Ana Ekrana Ekle"</strong> seçeneğine dokunun ve <strong>Ekle</strong> deyin.</li>
+        </ul>
+      `;
+    }
+    $("legalModal").classList.remove("hidden");
+  }
+
+  function setupPwa() {
+    if ("serviceWorker" in navigator && window.location.protocol.startsWith("http")) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+
+    const installBtn = $("installAppBtn");
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      if (installBtn) installBtn.classList.remove("hidden");
+    });
+
+    if (installBtn) {
+      installBtn.addEventListener("click", async () => {
+        if (!deferredInstallPrompt) {
+          openLegalModal("pwa");
+          return;
+        }
+        deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice && choice.outcome === "accepted") {
+          showToast("HangiBranş ana ekranınıza eklendi.");
+          installBtn.classList.add("hidden");
+        }
+        deferredInstallPrompt = null;
+      });
+    }
+
+    window.addEventListener("appinstalled", () => {
+      if (installBtn) installBtn.classList.add("hidden");
+      deferredInstallPrompt = null;
+    });
+  }
+
   function setupVoice() {
     const voiceBtn = $("voiceBtn");
     const voiceBtnText = $("voiceBtnText");
@@ -920,37 +957,21 @@
       if (e.target.id === "locationModal") $("locationModal").classList.add("hidden");
     });
 
-    $("aiSettingsBtn").addEventListener("click", () => {
-      $("backendUrlInput").value = state.backendUrl;
-      $("geminiKeyInput").value = state.geminiKey;
-      $("aiModal").classList.remove("hidden");
-    });
-    $("closeAiModal").addEventListener("click", () => $("aiModal").classList.add("hidden"));
-    $("aiModal").addEventListener("click", (e) => {
-      if (e.target.id === "aiModal") $("aiModal").classList.add("hidden");
-    });
-    $("saveAiBtn").addEventListener("click", () => {
-      state.backendUrl = $("backendUrlInput").value.trim();
-      state.geminiKey = $("geminiKeyInput").value.trim();
-      localStorage.setItem("doktorum_backend_url", state.backendUrl);
-      localStorage.setItem("doktorum_gemini_key", state.geminiKey);
-      updateAiStatusUI();
-      $("aiModal").classList.add("hidden");
-      showToast(state.backendUrl || state.geminiKey ? "Canlı Gemini modu etkinleştirildi." : "Hızlı çevrimdışı mod aktif.");
-    });
-    $("clearAiBtn").addEventListener("click", () => {
-      state.backendUrl = "";
-      state.geminiKey = "";
-      localStorage.removeItem("doktorum_backend_url");
-      localStorage.removeItem("doktorum_gemini_key");
-      updateAiStatusUI();
-      $("aiModal").classList.add("hidden");
-      showToast("Hızlı moda geçildi.");
-    });
+    if ($("kvkkBtn")) $("kvkkBtn").addEventListener("click", () => openLegalModal("kvkk"));
+    if ($("disclaimerBtn")) $("disclaimerBtn").addEventListener("click", () => openLegalModal("disclaimer"));
+    if ($("pwaHelpBtn")) $("pwaHelpBtn").addEventListener("click", () => openLegalModal("pwa"));
+    if ($("closeLegalModal")) $("closeLegalModal").addEventListener("click", () => $("legalModal").classList.add("hidden"));
+    if ($("okLegalBtn")) $("okLegalBtn").addEventListener("click", () => $("legalModal").classList.add("hidden"));
+    if ($("legalModal")) {
+      $("legalModal").addEventListener("click", (e) => {
+        if (e.target.id === "legalModal") $("legalModal").classList.add("hidden");
+      });
+    }
 
+    setupPwa();
     setupVoice();
     updateLocationUI();
-    updateAiStatusUI();
+    checkServerAiStatus();
   }
 
   document.addEventListener("DOMContentLoaded", init);

@@ -4,16 +4,51 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0F766E" />
+  <meta name="description" content="HangiBranş: Şikayetinizi sesli veya yazılı anlatın; hekim onaylı ön değerlendirme ile doğru tıbbi bölümü, Türkiye'nin 81 ilindeki en yakın Devlet, Üniversite ve Özel hastaneleri, doktor kadrolarını ve nöbetçi eczaneleri saniyeler içinde bulun." />
+  <meta name="keywords" content="hangi bölüme gitmeliyim, hangi branş, en yakın hastane, nöbetçi eczane, doktor bul, devlet hastanesi, mhrs, semptom yönlendirme, türkiye hastaneleri" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph & Sosyal Medya Paylaşım Kartı -->
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="tr_TR" />
+  <meta property="og:site_name" content="HangiBranş" />
+  <meta property="og:title" content="HangiBranş — Şikayetini Anlat, Doğru Bölümü ve En Yakın Hastaneyi Bul" />
+  <meta property="og:description" content="Hekim onaylı klinik ön değerlendirme ile doğru polikliniği, 81 ilde en yakın hastaneleri, doktor kadrolarını ve nöbetçi eczaneleri tek ekranda bulun." />
+  <meta property="og:url" content="https://hangibrans.vercel.app/" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="HangiBranş — Doğru Bölüm & En Yakın Hastane" />
+  <meta name="twitter:description" content="Şikayetinizi anlatın; doğru tıbbi bölümü, en yakın hastaneyi ve nöbetçi eczaneyi saniyeler içinde öğrenin." />
+
+  <!-- PWA (Telefona Uygulama Gibi Kurulum) -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="HangiBranş" />
   <link rel="icon" type="image/svg+xml" href="logo.svg" />
+  <link rel="apple-touch-icon" href="logo.svg" />
+
   <title>HangiBranş — Şikayetini Anlat, Doğru Bölümü ve En Yakın Hastaneyi Bul</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "HangiBranş",
+      "applicationCategory": "HealthApplication",
+      "operatingSystem": "Web, Android, iOS",
+      "inLanguage": "tr-TR",
+      "description": "Hastaların şikayetlerini anlatarak doğru tıbbi bölümü, 81 ilde en yakın Devlet, Devlet Üniversitesi ve Özel hastaneleri ve nöbetçi eczaneleri bulmasına yardımcı olan sağlık yönlendirme platformu."
+    }
+  </script>
 </head>
 <body>
   <div class="app-shell">
-    <!-- Sade Üst Bar -->
+    <!-- Sade Hasta Üst Barı -->
     <header class="app-header">
       <div class="header-left">
         <div class="brand-logo" aria-hidden="true">
@@ -31,17 +66,21 @@
       </div>
 
       <div class="header-actions">
+        <button id="installAppBtn" class="pill-btn install-pill hidden" type="button" title="HangiBranş'ı telefonunuza uygulama olarak ekleyin">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Uygulamayı Kur</span>
+        </button>
+
         <button id="locationBtn" class="pill-btn" type="button" title="Konum seç">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
             <circle cx="12" cy="10" r="3"></circle>
           </svg>
           <span id="currentLocLabel">Konum Seç</span>
-        </button>
-
-        <button id="aiSettingsBtn" class="pill-btn ai-pill" type="button" title="Yapay Zeka (Gemini API) Ayarı">
-          <span id="aiModeDot" class="status-dot"></span>
-          <span id="aiModeLabel">Hızlı Mod</span>
         </button>
       </div>
     </header>
@@ -163,12 +202,12 @@
           </div>
         </div>
 
-        <!-- EN SONDA: KONUM SEÇİMİ (81 İl + Serbest İlçe + GPS) -->
+        <!-- EN SONDA: KONUM SEÇİMİ (81 İl + İlçe + GPS) -->
         <section id="locationBanner" class="card location-banner" aria-label="Konum Seçimi">
           <div class="loc-banner-text">
             <span class="badge-teal" style="margin-bottom:6px;">Son Adım · Konumunuzu Belirleyin</span>
             <strong id="locBannerTitle">En yakın hastaneleri görmek için İl / İlçe seçin veya GPS kullanın</strong>
-            <span id="locBannerDesc">Türkiye'deki 81 il ve tüm ilçeleri kendiniz seçip yazabilirsiniz.</span>
+            <span id="locBannerDesc">Türkiye'deki 81 il ve 973 ilçeden konumunuzu seçebilirsiniz.</span>
           </div>
 
           <div class="manual-loc-form">
@@ -222,6 +261,18 @@
           <a id="ieoDutyLink" href="https://www.istanbuleczaciodasi.org.tr/nobetci-eczane/" target="_blank" rel="noopener" class="btn-ghost sm-btn hidden">İstanbul Eczacı Odası ↗</a>
         </div>
       </section>
+
+      <!-- YASAL BİLGİLENDİRME & FOOTER -->
+      <footer class="app-footer" aria-label="Yasal Bilgilendirme ve Uygulama Bağlantıları">
+        <div class="footer-links">
+          <button id="kvkkBtn" class="footer-link" type="button">KVKK &amp; Gizlilik</button>
+          <span aria-hidden="true">·</span>
+          <button id="disclaimerBtn" class="footer-link" type="button">Tıbbi Sorumluluk Reddi</button>
+          <span aria-hidden="true">·</span>
+          <button id="pwaHelpBtn" class="footer-link" type="button">Telefona Ekle (Uygulama)</button>
+        </div>
+        <p class="footer-copy">HangiBranş · Türkiye 81 İl Sağlık Yönlendirme Platformu · Kesin tanı yerine geçmez, acil durumlarda <strong>112</strong>'yi arayın.</p>
+      </footer>
     </main>
   </div>
 
@@ -240,31 +291,16 @@
     </div>
   </div>
 
-  <!-- GEMINI YAPAY ZEKA AYAR MODALI -->
-  <div id="aiModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="aiModalTitle">
+  <!-- KVKK / TIBBİ SORUMLULUK / PWA KURULUM MODALI -->
+  <div id="legalModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="legalModalTitle">
     <div class="modal-sheet">
       <div class="modal-header">
-        <h3 id="aiModalTitle">Canlı Yapay Zeka (Gemini API)</h3>
-        <button id="closeAiModal" class="icon-close" type="button" aria-label="Kapat">✕</button>
+        <h3 id="legalModalTitle">Bilgilendirme</h3>
+        <button id="closeLegalModal" class="icon-close" type="button" aria-label="Kapat">✕</button>
       </div>
-      <p class="muted-text" style="margin-bottom:12px;">
-        Uygulama varsayılan olarak çevrimdışı çalışır. Dilerseniz kendi <strong>Gemini API</strong> anahtarınızı veya canlı sunucu adresinizi ekleyerek serbest Türkçe analiz açabilirsiniz.
-      </p>
-
-      <div class="form-field">
-        <label for="backendUrlInput">Canlı Sunucu Adresi (Önerilen · örn. /api/triage)</label>
-        <input id="backendUrlInput" type="text" placeholder="Opsiyonel: https://siteniz.com/api/triage" />
-      </div>
-
-      <div class="form-field">
-        <label for="geminiKeyInput">veya Doğrudan Test İçin Gemini API Anahtarı</label>
-        <input id="geminiKeyInput" type="password" placeholder="AIza..." />
-        <small class="field-hint">Anahtar yalnızca bu tarayıcıda saklanır.</small>
-      </div>
-
+      <div id="legalModalBody" class="legal-body"></div>
       <div class="modal-actions">
-        <button id="clearAiBtn" class="btn-ghost" type="button">Hızlı Moda Dön</button>
-        <button id="saveAiBtn" class="btn-primary" type="button">Kaydet</button>
+        <button id="okLegalBtn" class="btn-primary" type="button">Anladım</button>
       </div>
     </div>
   </div>
