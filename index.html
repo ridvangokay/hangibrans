@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0F766E" />
+  <link rel="icon" type="image/svg+xml" href="logo.svg" />
+  <title>HangiBranş — Şikayetini Anlat, Doğru Bölümü ve En Yakın Hastaneyi Bul</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sade Üst Bar -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none">
+            <rect width="40" height="40" rx="11" fill="#0F766E"/>
+            <path d="M20 7C14.48 7 10 11.48 10 17C10 24.1 20 33 20 33C20 33 30 24.1 30 17C30 11.48 25.52 7 20 7Z" fill="white" fill-opacity="0.16"/>
+            <path d="M20 8.5C15.3 8.5 11.5 12.3 11.5 17C11.5 23 20 31.2 20 31.2C20 31.2 28.5 23 28.5 17C28.5 12.3 24.7 8.5 20 8.5Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M20 13.2V20.8M16.2 17H23.8" stroke="white" stroke-width="2.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-name">HangiBranş</h1>
+          <p class="brand-tagline">Şikayetini anlat, doğru bölümü ve en yakın hastaneyi bul</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="locationBtn" class="pill-btn" type="button" title="Konum seç">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <span id="currentLocLabel">Konum Seç</span>
+        </button>
+
+        <button id="aiSettingsBtn" class="pill-btn ai-pill" type="button" title="Yapay Zeka (Gemini API) Ayarı">
+          <span id="aiModeDot" class="status-dot"></span>
+          <span id="aiModeLabel">Hızlı Mod</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Kısa Tıbbi Bilgilendirme -->
+    <div class="disclaimer-strip" role="note">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+      <span>Ön tanı bilgilendirme amaçlıdır, kesin hekim tanısı yerine geçmez. Acil durumlarda <strong>112</strong>'yi arayın.</span>
+    </div>
+
+    <main class="app-main">
+      <!-- ADIM 1 (EN YUKARIDA): EN YAKIN DOĞRU HASTANE & ŞİKAYET GİRİŞİ -->
+      <section class="card hero-card" aria-label="Şikayet ve En Yakın Hastane Girişi">
+        <span class="badge-teal">Adım 1 · En Yakın Doğru Hastane İçin Başlayın</span>
+        <h2>Şikayetinizi anlatın, doğru bölümü ve size en yakın hastaneyi bulalım</h2>
+        <p class="hero-sub">Konuşarak veya yazarak anlatabilirsiniz. Bölümünüz belirlendikten sonra en sonda konumunuzu seçip en yakın hastaneleri görebilirsiniz.</p>
+
+        <div class="input-box">
+          <textarea
+            id="symptomInput"
+            rows="3"
+            placeholder="Örn: Esenyurt'ta yaşıyorum, karnım ağrıyor, hangi bölüme gitmeliyim?"
+            aria-label="Şikayetinizi yazın"
+          ></textarea>
+
+          <div class="input-bar">
+            <button id="voiceBtn" class="btn-voice" type="button">
+              <span class="voice-pulse"></span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+              <span id="voiceBtnText">Sesle Anlat</span>
+            </button>
+
+            <button id="analyzeBtn" class="btn-primary" type="button">
+              <span id="analyzeBtnText">Değerlendirmeye Başla</span>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="voiceStatus" class="info-banner hidden"></div>
+
+        <div class="quick-examples">
+          <span class="quick-label">Hemen denemek için dokunun:</span>
+          <div id="examplePills" class="example-pills"></div>
+        </div>
+      </section>
+
+      <!-- ADIM 2: NETLEŞTİRİCİ SORULAR KARTI -->
+      <section id="questionsCard" class="card questions-card hidden" aria-label="Kısa Değerlendirme Soruları">
+        <span class="badge-teal">Adım 2 · Kısa Netleştirme</span>
+        <h3 id="questionsTitle">Olası ön tanı ve doğru branş için birkaç kısa soru</h3>
+        <p class="muted-text" style="margin-bottom:14px;">Size en uygun seçeneklere dokunun, hemen olası ön tanıyı ve en yakın hastaneleri gösterelim.</p>
+        <div id="questionsList" class="questions-list"></div>
+        <div class="questions-actions">
+          <button id="showResultBtn" class="btn-primary full-width" type="button">
+            Olası Ön Tanı ve Hastaneleri Göster →
+          </button>
+        </div>
+      </section>
+
+      <!-- ACİL DURUM KIRMIZI BAYRAK KARTI -->
+      <section id="emergencyCard" class="card emergency-card hidden" role="alert">
+        <div class="emergency-top">
+          <div class="emergency-icon">!</div>
+          <div>
+            <span class="emergency-kicker">ACİL DURUM UYARISI</span>
+            <h3>Randevu Beklemeden Acil Servise Başvurun</h3>
+          </div>
+        </div>
+        <p id="emergencyReason"></p>
+        <div class="emergency-btns">
+          <a href="tel:112" class="btn-danger">112 Acil'i Ara</a>
+          <a id="nearestErLink" href="https://www.google.com/maps/search/acil+servis" target="_blank" rel="noopener" class="btn-danger-outline">En Yakın Acil Servis (Harita)</a>
+        </div>
+      </section>
+
+      <!-- ADIM 3: OLASI ÖN TANI, BRANŞ & EN YAKIN HASTANELER -->
+      <section id="resultSection" class="hidden" aria-live="polite">
+        <div class="card result-card">
+          <div class="result-head">
+            <div>
+              <span class="badge-green">Gitmeniz Gereken Bölüm</span>
+              <h2 id="specialtyTitle" class="specialty-title">Genel Cerrahi</h2>
+            </div>
+            <span id="engineTag" class="engine-tag">Klinik Ön Değerlendirme</span>
+          </div>
+
+          <!-- Olası Ön Tanı Kutusu -->
+          <div class="prelim-box">
+            <div class="prelim-kicker">Olası Ön Tanı *(Kesin tanı değildir, hekim muayenesi gerekir)*</div>
+            <div id="prelimTitle" class="prelim-title"></div>
+            <div id="differentialWrap" class="differential-text hidden"></div>
+          </div>
+
+          <p id="explanationText" class="explanation-text"></p>
+
+          <!-- Kısa Kırmızı Bayrak Hatırlatması -->
+          <div id="redFlagBox" class="redflag-box">
+            <strong>Ne zaman Acil Servise gitmelisiniz?</strong>
+            <span id="redFlagText"></span>
+          </div>
+
+          <!-- Alternatif Branşlar -->
+          <div id="altWrap" class="alt-wrap hidden">
+            <span>İlgili diğer bölümler:</span>
+            <div id="altList" class="alt-list"></div>
+          </div>
+        </div>
+
+        <!-- EN SONDA: KONUM SEÇİMİ (81 İl + Serbest İlçe + GPS) -->
+        <section id="locationBanner" class="card location-banner" aria-label="Konum Seçimi">
+          <div class="loc-banner-text">
+            <span class="badge-teal" style="margin-bottom:6px;">Son Adım · Konumunuzu Belirleyin</span>
+            <strong id="locBannerTitle">En yakın hastaneleri görmek için İl / İlçe seçin veya GPS kullanın</strong>
+            <span id="locBannerDesc">Türkiye'deki 81 il ve tüm ilçeleri kendiniz seçip yazabilirsiniz.</span>
+          </div>
+
+          <div class="manual-loc-form">
+            <select id="provinceSelect" class="loc-input" aria-label="İl seçin">
+              <option value="">1. İl seçin (81 il)...</option>
+            </select>
+            <select id="districtSelect" class="loc-input" aria-label="İlçe seçin" disabled>
+              <option value="">2. Önce il seçin...</option>
+            </select>
+            <button id="saveManualLocBtn" class="btn-primary sm-btn" type="button">Hastaneleri Göster</button>
+          </div>
+
+          <div class="loc-banner-actions">
+            <button id="bannerGpsBtn" class="btn-secondary sm-btn" type="button">Konumumu Otomatik Bul (GPS)</button>
+          </div>
+        </section>
+
+        <!-- En Yakın Hastaneler -->
+        <div id="hospitalsWrapper" class="hidden">
+          <div class="hospitals-header">
+            <div>
+              <h3 id="hospitalsHeading">Yakınındaki Hastaneler</h3>
+              <p id="hospitalsSub" class="muted-text">Mesafeye göre sıralı · Vakıf üniversiteleri Özel kategorisinde listelenir</p>
+            </div>
+          </div>
+
+          <div class="inst-filters" id="instFilters">
+            <button class="filter-pill active" data-type="Tümü" type="button">Tümü</button>
+            <button class="filter-pill" data-type="Devlet" type="button">Devlet</button>
+            <button class="filter-pill" data-type="Üniversite" type="button">Üniversite (Devlet)</button>
+            <button class="filter-pill" data-type="Özel" type="button">Özel</button>
+          </div>
+
+          <div id="hospitalsList" class="hospitals-list"></div>
+        </div>
+      </section>
+
+      <!-- EN ALTTA: ECZANE & NÖBETÇİ ECZANE ALANI -->
+      <section id="pharmacySection" class="card pharmacy-card" aria-label="En Yakın Eczane ve Nöbetçi Eczane">
+        <div class="pharmacy-head">
+          <div class="pharmacy-badge" aria-hidden="true">E</div>
+          <div>
+            <h3>En Yakın Eczane &amp; Nöbetçi Eczane</h3>
+            <p id="pharmacySub" class="muted-text">Konumunuzu seçtiğinizde bulunduğunuz ilçedeki açık ve nöbetçi eczanelere tek dokunuşla ulaşın.</p>
+          </div>
+        </div>
+        <div class="pharmacy-actions">
+          <a id="nearestPharmacyLink" href="https://www.google.com/maps/search/en+yak%C4%B1n+eczane" target="_blank" rel="noopener" class="btn-pharmacy-primary">En Yakın Eczaneler (Harita)</a>
+          <a id="dutyPharmacyMapLink" href="https://www.google.com/maps/search/n%C3%B6bet%C3%A7i+eczane" target="_blank" rel="noopener" class="btn-pharmacy-outline">Nöbetçi Eczaneler (Harita)</a>
+          <a href="https://www.turkiye.gov.tr/saglik-titck-nobetci-eczane-sorgulama" target="_blank" rel="noopener" class="btn-ghost sm-btn">Resmi e-Devlet Nöbetçi Listesi ↗</a>
+          <a id="ieoDutyLink" href="https://www.istanbuleczaciodasi.org.tr/nobetci-eczane/" target="_blank" rel="noopener" class="btn-ghost sm-btn hidden">İstanbul Eczacı Odası ↗</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- KONUM SEÇİM MODALI -->
+  <div id="locationModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="locModalTitle">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 id="locModalTitle">Bulunduğunuz Konumu Seçin</h3>
+        <button id="closeLocModal" class="icon-close" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <p class="muted-text" style="margin-bottom:12px;">En yakın Devlet, Devlet Üniversitesi ve Özel hastaneleri gerçek mesafeye göre sıralıyoruz.</p>
+      <button id="gpsBtn" class="btn-secondary full-width" type="button" style="margin-bottom:12px;">
+        Konumumu Otomatik Bul (GPS)
+      </button>
+      <div id="locationGrid" class="location-grid"></div>
+    </div>
+  </div>
+
+  <!-- GEMINI YAPAY ZEKA AYAR MODALI -->
+  <div id="aiModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="aiModalTitle">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 id="aiModalTitle">Canlı Yapay Zeka (Gemini API)</h3>
+        <button id="closeAiModal" class="icon-close" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <p class="muted-text" style="margin-bottom:12px;">
+        Uygulama varsayılan olarak çevrimdışı çalışır. Dilerseniz kendi <strong>Gemini API</strong> anahtarınızı veya canlı sunucu adresinizi ekleyerek serbest Türkçe analiz açabilirsiniz.
+      </p>
+
+      <div class="form-field">
+        <label for="backendUrlInput">Canlı Sunucu Adresi (Önerilen · örn. /api/triage)</label>
+        <input id="backendUrlInput" type="text" placeholder="Opsiyonel: https://siteniz.com/api/triage" />
+      </div>
+
+      <div class="form-field">
+        <label for="geminiKeyInput">veya Doğrudan Test İçin Gemini API Anahtarı</label>
+        <input id="geminiKeyInput" type="password" placeholder="AIza..." />
+        <small class="field-hint">Anahtar yalnızca bu tarayıcıda saklanır.</small>
+      </div>
+
+      <div class="modal-actions">
+        <button id="clearAiBtn" class="btn-ghost" type="button">Hızlı Moda Dön</button>
+        <button id="saveAiBtn" class="btn-primary" type="button">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script src="turkey_districts.js"></script>
+  <script src="hospitals.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

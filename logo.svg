@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="hbGrad" x1="48" y1="32" x2="464" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F766E"/>
+      <stop offset="55%" stop-color="#0D9488"/>
+      <stop offset="100%" stop-color="#14B8A6"/>
+    </linearGradient>
+    <linearGradient id="pinGlow" x1="256" y1="92" x2="256" y2="424" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#CCFBF1" stop-opacity="0.96"/>
+    </linearGradient>
+  </defs>
+  <!-- App Icon Canvas -->
+  <rect width="512" height="512" rx="118" fill="url(#hbGrad)"/>
+  <!-- Subtle ambient highlight -->
+  <circle cx="152" cy="120" r="170" fill="#FFFFFF" fill-opacity="0.08"/>
+  <!-- Location Pin Silhouette -->
+  <path d="M256 96C184.2 96 126 154.2 126 226C126 315.5 232.8 405.2 248.4 417.8C252.9 421.4 259.1 421.4 263.6 417.8C279.2 405.2 386 315.5 386 226C386 154.2 327.8 96 256 96Z" fill="url(#pinGlow)"/>
+  <!-- Medical Cross Cutout inside Pin -->
+  <rect x="234" y="160" width="44" height="132" rx="14" fill="#0F766E"/>
+  <rect x="190" y="204" width="132" height="44" rx="14" fill="#0F766E"/>
+</svg>
