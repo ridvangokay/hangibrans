@@ -120,7 +120,8 @@ const DOKTORUM_HOSPITALS = [
         { name: "Dr. Öğr. Üyesi Alaaddin Aydın", focus: "Genel Cerrahi" },
         { name: "Op. Dr. Eryiğit Eren", focus: "Genel Cerrahi" },
         { name: "Op. Dr. Tansu Altıntaş", focus: "Genel Cerrahi" },
-        { name: "Op. Dr. Musa Diri", focus: "Genel Cerrahi" }
+        { name: "Op. Dr. Musa Diri", focus: "Genel Cerrahi" },
+        { name: "Op. Dr. Rıdvan Gökay", focus: "Genel Cerrahi · Tiroid, Meme, Safra Kesesi, Fıtık, Obezite ve Laparoskopik Cerrahi" }
       ],
       "gastroenteroloji": [
         { name: "Uzm. Dr. Fatih Ensaroğlu", focus: "Gastroenteroloji" },
