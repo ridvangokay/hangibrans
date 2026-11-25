@@ -1,35 +1,93 @@
 // HangiBranş — Tüm Türkiye Canlı Hastane & Doktor Sorgulama API'si (Vercel Serverless)
-// 1. Öncelik: Supabase (PostGIS) veritabanındaki doğrulanmış 81 il hastane & doktor kadrosu
+// 1. Öncelik: Supabase veritabanındaki doğrulanmış 81 il hastane & doktor kadrosu
 // 2. Otomatik Yedek: Supabase henüz kurulmadıysa OpenStreetMap Overpass API ile Türkiye'nin
-//    herhangi bir il/ilçesindeki gerçek hastaneleri canlı getirir ve Vakıf Üniversitelerini "Özel" sınıflar.
+//    herhangi bir il/ilçesindeki gerçek hastaneleri canlı getirir, dal hastanelerini filtreler
+//    ve Vakıf Üniversitelerini "Özel" sınıflar.
+
+const ALL_SPECIALTIES = [
+  "genel-cerrahi", "gastroenteroloji", "kardiyoloji", "kalp-damar", "gogus-hastaliklari",
+  "ortopedi", "beyin-cerrahi", "kbb", "noroloji", "dermatoloji", "uroloji", "goz",
+  "kadin-dogum", "dahiliye", "cocuk-sagligi", "psikiyatri"
+];
 
 const VAKIF_UNI_KEYWORDS = [
   "istinye", "medipol", "acıbadem üniversitesi", "acibadem universitesi", "koç üniversitesi", "koc universitesi",
   "başkent üniversitesi", "baskent universitesi", "yeditepe", "bezmialem", "biruni", "bahçeşehir", "bahcesehir",
   "lokman hekim", "maltepe üniversitesi", "okan üniversitesi", "atlas üniversitesi", "yeni yüzyıl",
-  "demiroğlu bilim", "sanko", "tobb", "yüksek ihtisas", "karatay", "ufuk üniversitesi", "fenerbahçe üniversitesi",
+  "demiroğlu bilim", "sanko", "tobb", "yüksek ihtisas üniversitesi", "karatay", "ufuk üniversitesi", "fenerbahçe üniversitesi",
   "liv hospital", "medical park", "medicana", "memorial", "acıbadem", "acibadem", "florence nightingale", "amerikan hastanesi"
 ];
 
 const DEVLET_KEYWORDS = [
   "devlet hastanesi", "şehir hastanesi", "sehir hastanesi", "eğitim ve araştırma", "egitim ve arastirma",
-  "ağız ve diş sağlığı", "devlet", "sağlık bakanlığı", "numune", "süreyyapaşa", "siyami ersek", "hasek", "taksim eah"
+  "sağlık bakanlığı", "numune", "süreyyapaşa", "siyami ersek", "hasek", "taksim eah", "ahi evren"
 ];
+
+const DEVLET_UNI_EXTRA = [
+  "ktü", "farabi hastanesi", "ibni sina hastanesi", "balcalı", "tıp fakültesi", "tip fakultesi"
+];
+
+function isExcludedFacility(name = "") {
+  const n = ` ${name.toLocaleLowerCase("tr-TR")} `;
+  const excluded = [
+    "veteriner", "hayvan", "ağız ve diş", "agiz ve dis", "diş sağlığı", "dis sagligi",
+    "diş hastanesi", "dis hastanesi", "diş merkezi", "dis merkezi", "diş polikliniği",
+    "diş kliniği", "dental", "ortodonti", "adsm", "adsh", "aile sağlığı", "asm ",
+    "toplum sağlığı", "kan merkezi", "kızılay kan", "huzurevi", "yaşlı bakım",
+    "reyap", "medilife beylikdüzü"
+  ];
+  return excluded.some((kw) => n.includes(kw));
+}
+
+function detectSpecialties(name = "") {
+  const n = ` ${name.toLocaleLowerCase("tr-TR").replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ")} `;
+
+  const isEyeOnly =
+    !n.includes("göztepe") &&
+    (n.includes(" göz ") || n.includes(" goz ") || n.includes("dünyagöz") || n.includes("dunyagoz") ||
+      n.includes("batıgöz") || n.includes("venigöz") || n.includes("kudret göz") ||
+      n.includes("maya göz") || n.includes("kaşkaloğlu") || n.includes("ulucanlar göz") ||
+      n.includes("beyoğlu göz"));
+  if (isEyeOnly) return ["goz"];
+
+  const hasGogus = n.includes("göğüs") || n.includes("gogus") || n.includes("süreyyapaşa") || n.includes("yedikule göğüs") || n.includes("suat seren");
+  const hasKalp = n.includes(" kalp ") || n.includes("kardiyoloji") || n.includes("damar cerrahisi") || n.includes("siyami ersek") || n.includes("koşuyolu yüksek ihtisas");
+  if (hasGogus && hasKalp) return ["kardiyoloji", "kalp-damar", "gogus-hastaliklari"];
+  if (hasKalp) return ["kardiyoloji", "kalp-damar"];
+  if (hasGogus) return ["gogus-hastaliklari"];
+
+  const hasKadinDogum = n.includes("kadın doğum") || n.includes("kadin dogum") || n.includes("kadın hastalıkları") || n.includes("doğumevi") || n.includes("dogumevi") || n.includes("zeynep kamil") || n.includes("zekai tahir") || n.includes("tüp bebek");
+  const hasCocuk = n.includes("çocuk hast") || n.includes("cocuk hast") || n.includes("çocuk sağlığı") || n.includes("behçet uz") || n.includes("sami ulus") || n.includes("pediatri");
+  if (hasKadinDogum && hasCocuk) return ["kadin-dogum", "cocuk-sagligi"];
+  if (hasKadinDogum) return ["kadin-dogum"];
+  if (hasCocuk) return ["cocuk-sagligi"];
+
+  if (n.includes("ruh ve sinir") || n.includes("ruh sağlığı") || n.includes("ruh sagligi") || n.includes("mazhar osman") || n.includes("npistanbul") || n.includes("np istanbul") || n.includes("psikiyatri hast") || n.includes("amatem")) {
+    return ["psikiyatri", "noroloji"];
+  }
+  if (n.includes("fizik tedavi") || n.includes("rehabilitasyon") || n.includes("kemik hastalıkları") || n.includes("baltalimanı") || n.includes("ortopedi hast")) {
+    return ["ortopedi", "beyin-cerrahi"];
+  }
+  if (n.includes("kulak burun") || n.includes(" kbb ")) return ["kbb"];
+  if (n.includes("deri ve zührevi") || n.includes("cildiye hast") || n.includes("lepra")) return ["dermatoloji"];
+  if (n.includes("diyaliz") || n.includes("böbrek hast")) return ["dahiliye", "uroloji"];
+  if (n.includes("onkoloji") && !n.includes("şehir hastanesi") && !n.includes("devlet hastanesi")) {
+    return ["genel-cerrahi", "dahiliye", "gogus-hastaliklari", "kadin-dogum", "uroloji", "gastroenteroloji"];
+  }
+  return ALL_SPECIALTIES;
+}
 
 function classifyHospital(name = "", operatorType = "") {
   const n = name.toLocaleLowerCase("tr-TR");
   const op = operatorType.toLocaleLowerCase("tr-TR");
 
-  // 1) Vakıf Üniversiteleri & Özel Zincirler -> KESİNLİKLE ÖZEL
   if (VAKIF_UNI_KEYWORDS.some((kw) => n.includes(kw))) {
     const isUni = n.includes("üniversite") || n.includes("universite");
-    return {
-      type: "Özel",
-      subTypeLabel: isUni ? "Özel (Vakıf Üniversitesi)" : "Özel Hastane"
-    };
+    return { type: "Özel", subTypeLabel: isUni ? "Özel (Vakıf Üniversitesi)" : "Özel Hastane" };
   }
-
-  // 2) Devlet Hastaneleri / Şehir Hastaneleri / EAH
+  if (DEVLET_UNI_EXTRA.some((kw) => n.includes(kw))) {
+    return { type: "Üniversite", subTypeLabel: "Devlet Üniversitesi Hastanesi" };
+  }
   if (DEVLET_KEYWORDS.some((kw) => n.includes(kw)) || op === "public" || op === "government") {
     if (n.includes("üniversite") || n.includes("tıp fakültesi")) {
       return { type: "Üniversite", subTypeLabel: "Devlet Üniversitesi Hastanesi" };
@@ -39,13 +97,9 @@ function classifyHospital(name = "", operatorType = "") {
     }
     return { type: "Devlet", subTypeLabel: "Devlet Hastanesi" };
   }
-
-  // 3) Kamu Üniversite Hastaneleri (İstanbul Tıp, Cerrahpaşa, Hacettepe, Ege, DEÜ, Akdeniz, Uludağ, Gazi, Ankara Üniv., Marmara vb.)
   if (n.includes("üniversite") || n.includes("tıp fakültesi") || n.includes("tip fakultesi")) {
     return { type: "Üniversite", subTypeLabel: "Devlet Üniversitesi Hastanesi" };
   }
-
-  // 4) Diğer özel hastaneler
   return { type: "Özel", subTypeLabel: "Özel Hastane" };
 }
 
@@ -104,8 +158,7 @@ async function querySupabase({ lat, lng, city, district, specialty, instType }) 
   }));
 }
 
-async function queryOpenStreetMapFallback({ lat, lng, city, district, instType }) {
-  // Koordinat yoksa Nominatim ile seçilen İl + İlçe merkez koordinatını al (ücretsiz)
+async function queryOpenStreetMapFallback({ lat, lng, city, district, specialty, instType }) {
   let cLat = lat;
   let cLng = lng;
   if (!Number.isFinite(cLat) || !Number.isFinite(cLng)) {
@@ -123,7 +176,6 @@ async function queryOpenStreetMapFallback({ lat, lng, city, district, instType }
   }
   if (!Number.isFinite(cLat) || !Number.isFinite(cLng)) return [];
 
-  // Overpass API ile 15 km yarıçaptaki tüm gerçek hastaneleri yedekli aynalardan getir
   const overpassQuery = `[out:json][timeout:12];nwr["amenity"="hospital"](around:15000,${cLat},${cLng});out center tags;`;
   const endpoints = [
     "https://overpass.kumi.systems/api/interpreter",
@@ -158,15 +210,16 @@ async function queryOpenStreetMapFallback({ lat, lng, city, district, instType }
     const tags = el.tags || {};
     const name = (tags.name || "").trim();
     if (!name || seen.has(name.toLocaleLowerCase("tr-TR"))) continue;
-    // Ağız/Diş veya hayvan hastanesi gibi ilgisiz kayıtları ayıkla
-    const lowerName = name.toLocaleLowerCase("tr-TR");
-    if (lowerName.includes("veteriner") || lowerName.includes("hayvan")) continue;
+    if (isExcludedFacility(name)) continue;
+
+    const specs = detectSpecialties(name);
+    if (specialty && !specs.includes(specialty)) continue;
 
     const hLat = el.lat ?? el.center?.lat;
     const hLng = el.lon ?? el.center?.lon;
     if (!Number.isFinite(hLat) || !Number.isFinite(hLng)) continue;
 
-    seen.add(lowerName);
+    seen.add(name.toLocaleLowerCase("tr-TR"));
     const cls = classifyHospital(name, tags["operator:type"] || "");
     if (instType && instType !== "Tümü" && cls.type !== instType) continue;
 
@@ -211,14 +264,12 @@ export default async function handler(req, res) {
   const lng = req.query.lng ? parseFloat(req.query.lng) : NaN;
 
   try {
-    // 1) Önce kendi Supabase (PostGIS) veritabanımızı sorgula
     const dbResults = await querySupabase({ lat, lng, city, district, specialty, instType });
     if (dbResults && dbResults.length > 0) {
       return res.status(200).json({ source: "supabase", hospitals: dbResults });
     }
 
-    // 2) Veritabanı henüz boşsa/kurulmadıysa canlı OpenStreetMap (81 il / 973 ilçe) yedeğini kullan
-    const liveResults = await queryOpenStreetMapFallback({ lat, lng, city, district, instType });
+    const liveResults = await queryOpenStreetMapFallback({ lat, lng, city, district, specialty, instType });
     return res.status(200).json({ source: "live-osm", hospitals: liveResults });
   } catch (err) {
     return res.status(500).json({ error: "Hastane sorgusu sırasında hata oluştu.", details: err.message });
