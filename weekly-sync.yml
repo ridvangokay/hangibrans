@@ -1,0 +1,21 @@
+name: Haftalık Türkiye Hastane Veritabanı Güncellemesi
+
+on:
+  schedule:
+    # Her Pazar gecesi saat 03:00 (UTC) otomatik çalışır
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+jobs:
+  sync-hospitals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Türkiye hastanelerini Supabase'e senkronize et
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/sync_turkey_hospitals.mjs
