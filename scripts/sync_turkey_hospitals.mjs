@@ -66,7 +66,11 @@ async function fetchAllTurkeyHospitals() {
 
   const resp = await fetch("https://overpass-api.de/api/interpreter", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Accept": "application/json, */*",
+      "User-Agent": "HangiBrans/1.0 (https://github.com/ridvangokay/hangibrans)"
+    },
     body: `data=${encodeURIComponent(query)}`
   });
 
